@@ -33,7 +33,7 @@ app.post('/agrega_todo', (req, res) => {
             return res.status(500).json({
                 error: 'Error al guardar'
             });
-        }
+        
 
         res.status(201).json({
     mensaje: 'Todo guardado correctamente',
@@ -42,7 +42,19 @@ app.post('/agrega_todo', (req, res) => {
         });
     });
 });
+app.get('/todos', (req, res) => {
+    const query = `SELECT * FROM todos`;
 
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({
+                error: 'Error al obtener datos'
+            });
+        }
+
+        res.json(rows);
+    });
+});
 app.listen(3000, () => {
     console.log('Servidor corriendo en http://localhost:3000');
 });
