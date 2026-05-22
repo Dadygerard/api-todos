@@ -2,22 +2,29 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
+
 app.use(express.json());
 
-// Conexión a la base de datos
+// Conexión SQLite
 const db = new sqlite3.Database('./database.db');
 
 // Crear tabla si no existe
 db.run(`
-    CREATE TABLE IF NOT EXISTS todos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        todo TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
+CREATE TABLE IF NOT EXISTS todos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    todo TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)
 `);
 
-// Endpoint
+// Ruta principal
+app.get('/', (req, res) => {
+    res.send('Servidor funcionando correctamente');
+});
+
+// Agregar tarea
 app.post('/agrega_todo', (req, res) => {
+
     const { todo } = req.body;
 
     if (!todo) {
@@ -26,35 +33,49 @@ app.post('/agrega_todo', (req, res) => {
         });
     }
 
-    const query = `INSERT INTO todos (todo) VALUES (?)`;
+    db.run(
+        'INSERT INTO todos (todo) VALUES (?)',
+        [todo],
+        function (err) {
 
-    db.run(query, [todo], function(err) {
-        if (err) {
-            return res.status(500).json({
-                error: 'Error al guardar'
+            if (err) {
+                return res.status(500).json({
+                    error: 'Error al guardar'
+                });
+            }
+
+            res.status(201).json({
+                mensaje: 'Todo guardado correctamente',
+                id: this.lastID
             });
-        
 
-        res.status(201).json({
-    mensaje: 'Todo guardado correctamente',
-    id: this.lastID
-
-        });
-    });
-});
-app.get('/todos', (req, res) => {
-    const query = `SELECT * FROM todos`;
-
-    db.all(query, [], (err, rows) => {
-        if (err) {
-            return res.status(500).json({
-                error: 'Error al obtener datos'
-            });
         }
+    );
 
-        res.json(rows);
-    });
 });
+
+// Obtener tareas
+app.get('/todos', (req, res) => {
+
+    db.all(
+        'SELECT * FROM todos',
+        [],
+        (err, rows) => {
+
+            if (err) {
+                return res.status(500).json({
+                    error: 'Error al obtener datos'
+                });
+            }
+
+            res.json(rows);
+
+        }
+    );
+
+});
+
+// Iniciar servidor
 app.listen(3000, () => {
-    console.log('Servidor corriendo en http://localhost:3000');
+    console.log('Servidor corriendo en puerto 3000');
 });
